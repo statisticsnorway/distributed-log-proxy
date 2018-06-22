@@ -12,4 +12,4 @@ buildNumber.properties
 !/.mvn/wrapper/maven-wrapper.jar
 
 .idea/
-distributedlog-proxy.iml
+distributedlog-http-proxy.iml
