@@ -14,6 +14,7 @@ public class Main {
         String host = "127.0.0.1";
         int port = 8008;
         String instanceId = "1";
+        String streamToCreateOnStartup = null; // stream creation managed externally by default
 
         for (int i = 0; i < args.length; i++) {
             if ("--host".equals(args[i]) || "-h".equals(args[i])) {
@@ -45,9 +46,17 @@ public class Main {
                 instanceId = args[++i];
                 continue;
             }
+            if ("--stream".equals(args[i]) || "-s".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.format("Missing stream creation value argument\n");
+                    return;
+                }
+                streamToCreateOnStartup = args[++i];
+                continue;
+            }
         }
 
-        DistributedLogClientWrapper distributedLogClientWrapper = new DistributedLogClientWrapper("inet!127.0.0.1:8000", instanceId);
+        DistributedLogClientWrapper distributedLogClientWrapper = new DistributedLogClientWrapper("inet!127.0.0.1:8000", instanceId, streamToCreateOnStartup);
 
         Undertow server = Undertow.builder()
                 .addHttpListener(port, host)

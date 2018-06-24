@@ -8,6 +8,8 @@ import com.twitter.util.FutureEventListener;
 import org.apache.distributedlog.DLSN;
 import org.apache.distributedlog.service.DistributedLogClient;
 import org.apache.distributedlog.service.DistributedLogClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -16,9 +18,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class DistributedLogClientWrapper {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DistributedLogClientWrapper.class);
+
     final DistributedLogClient client;
 
-    DistributedLogClientWrapper(String finagleName, String instanceId) {
+    DistributedLogClientWrapper(String finagleName, String instanceId, String streamToCreateOnStartup) {
         ClientBuilder clientBuilder = ClientBuilder.get()
                 .hostConnectionLimit(5)
                 .hostConnectionCoresize(2)
@@ -33,6 +37,11 @@ public class DistributedLogClientWrapper {
                 .finagleNameStr(finagleName)
                 .thriftmux(true)
                 .build();
+
+        if (streamToCreateOnStartup != null) {
+            client.create(streamToCreateOnStartup);
+            LOG.info("Created stream: " + streamToCreateOnStartup);
+        }
     }
 
     DLSN write(String stream, ByteBuffer data, long timeout, TimeUnit unit) {
