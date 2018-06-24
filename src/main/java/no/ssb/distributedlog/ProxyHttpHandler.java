@@ -8,6 +8,7 @@ import io.undertow.util.HttpString;
 import org.apache.distributedlog.DLSN;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 public class ProxyHttpHandler implements HttpHandler {
@@ -58,7 +59,14 @@ public class ProxyHttpHandler implements HttpHandler {
             ByteBuffer data = ByteBuffer.wrap(buf);
             DLSN dlsn = clientWrapper.write(stream, data, 10, TimeUnit.SECONDS);
             exchange.setStatusCode(201);
-            exchange.getResponseHeaders().put(new HttpString("Location"), "/" + stream + "/" + dlsn.serialize());
+            String serializedDLSN = dlsn.serialize();
+            exchange.getResponseHeaders().put(new HttpString("Location"), "/" + stream + "/" + serializedDLSN);
+            exchange.getResponseHeaders().put(new HttpString("Content-Type"), "application/json; charset=utf-8");
+            StringBuilder sb = new StringBuilder(30 + serializedDLSN.length());
+            sb.append("{\"DLSN\":\"{\"base64\":\"").append(serializedDLSN).append("\"}}");
+            ByteBuffer responseData = ByteBuffer.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
+            exchange.setResponseContentLength(responseData.limit());
+            exchange.getResponseSender().send(responseData);
         };
     }
 
