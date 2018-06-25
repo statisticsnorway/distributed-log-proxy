@@ -63,7 +63,7 @@ public class ProxyHttpHandler implements HttpHandler {
             exchange.getResponseHeaders().put(new HttpString("Location"), "/" + stream + "/" + serializedDLSN);
             exchange.getResponseHeaders().put(new HttpString("Content-Type"), "application/json; charset=utf-8");
             StringBuilder sb = new StringBuilder(30 + serializedDLSN.length());
-            sb.append("{\"DLSN\":\"{\"base64\":\"").append(serializedDLSN).append("\"}}");
+            sb.append("{\"DLSN\":{\"base64\":\"").append(serializedDLSN).append("\"}}");
             ByteBuffer responseData = ByteBuffer.wrap(sb.toString().getBytes(StandardCharsets.UTF_8));
             exchange.setResponseContentLength(responseData.limit());
             exchange.getResponseSender().send(responseData);
