@@ -26,6 +26,7 @@
         <logback.version>1.2.3</logback.version>
         <testng.version>6.14.3</testng.version>
         <jsonassert.version>1.5.0</jsonassert.version>
+        <okhttp.version>3.10.0</okhttp.version>
     </properties>
 
     <developers>
@@ -99,6 +100,12 @@
             <groupId>org.skyscreamer</groupId>
             <artifactId>jsonassert</artifactId>
             <version>${jsonassert.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
