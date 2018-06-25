@@ -4,13 +4,43 @@ import io.undertow.Undertow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
+
 public class Main {
 
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) {
-        long now = System.currentTimeMillis();
+    private final Undertow server;
+    private final DistributedLogClientWrapper distributedLogClientWrapper;
 
+    public Main(String host, int port, String instanceId, String streamToCreateOnStartup) {
+        distributedLogClientWrapper =
+                new DistributedLogClientWrapper(
+                        "inet!127.0.0.1:8000",
+                        instanceId,
+                        streamToCreateOnStartup);
+
+        server = Undertow.builder()
+                .addHttpListener(port, host)
+                .setHandler(new ProxyHttpHandler(distributedLogClientWrapper))
+                .build();
+    }
+
+    Main start() {
+        server.start();
+        LOG.info("Server started, listening on {}:{}",
+                ((InetSocketAddress) server.getListenerInfo().get(0).getAddress()).getHostString(),
+                ((InetSocketAddress) server.getListenerInfo().get(0).getAddress()).getPort());
+        return this;
+    }
+
+    void stop() {
+        server.stop();
+        distributedLogClientWrapper.client.close();
+        LOG.info("Server shut down");
+    }
+
+    public static void main(String[] args) {
         String host = "127.0.0.1";
         int port = 8008;
         String instanceId = "1";
@@ -19,7 +49,7 @@ public class Main {
         for (int i = 0; i < args.length; i++) {
             if ("--host".equals(args[i]) || "-h".equals(args[i])) {
                 if (i + 1 >= args.length) {
-                    System.err.format("Missing host value argument\n");
+                    LOG.error("Missing host value argument\n");
                     return;
                 }
                 host = args[++i];
@@ -27,20 +57,20 @@ public class Main {
             }
             if ("--port".equals(args[i]) || "-p".equals(args[i])) {
                 if (i + 1 >= args.length) {
-                    System.err.format("MissClean ing port value argument\n");
+                    LOG.error("MissClean ing port value argument\n");
                     return;
                 }
                 try {
                     port = Integer.parseInt(args[++i]);
                 } catch (NumberFormatException e) {
-                    System.err.format("Port argument is not a valid integer\n");
+                    LOG.error("Port argument is not a valid integer\n");
                     return;
                 }
                 continue;
             }
             if ("--instance".equals(args[i]) || "-i".equals(args[i])) {
                 if (i + 1 >= args.length) {
-                    System.err.format("Missing instance value argument\n");
+                    LOG.error("Missing instance value argument\n");
                     return;
                 }
                 instanceId = args[++i];
@@ -48,7 +78,7 @@ public class Main {
             }
             if ("--stream".equals(args[i]) || "-s".equals(args[i])) {
                 if (i + 1 >= args.length) {
-                    System.err.format("Missing stream creation value argument\n");
+                    LOG.error("Missing stream creation value argument\n");
                     return;
                 }
                 streamToCreateOnStartup = args[++i];
@@ -56,24 +86,8 @@ public class Main {
             }
         }
 
-        DistributedLogClientWrapper distributedLogClientWrapper = new DistributedLogClientWrapper("inet!127.0.0.1:8000", instanceId, streamToCreateOnStartup);
-
-        Undertow server = Undertow.builder()
-                .addHttpListener(port, host)
-                .setHandler(new ProxyHttpHandler(distributedLogClientWrapper))
-                .build();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOG.warn("ShutdownHook triggered...");
-            server.stop();
-            distributedLogClientWrapper.client.close();
-            LOG.info("Server shut down cleanly!");
-        }));
-
-        server.start();
-        LOG.info("Listening on {}:{}", host, port);
-
-        long time = System.currentTimeMillis() - now;
-        LOG.info("Server started in {}ms", time);
+        Main main = new Main(host, port, instanceId, streamToCreateOnStartup);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> main.stop()));
+        main.start();
     }
 }
